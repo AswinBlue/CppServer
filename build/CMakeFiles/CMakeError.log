@@ -1,0 +1,106 @@
+Determining if the pthread_create exist failed with the following output:
+Change Dir: /home/munjunwoo/server/build/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/make" "cmTC_132a6/fast"
+/usr/bin/make -f CMakeFiles/cmTC_132a6.dir/build.make CMakeFiles/cmTC_132a6.dir/build
+make[1]: Entering directory '/home/munjunwoo/server/build/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_132a6.dir/CheckSymbolExists.c.o
+/usr/bin/cc    -o CMakeFiles/cmTC_132a6.dir/CheckSymbolExists.c.o   -c /home/munjunwoo/server/build/CMakeFiles/CMakeTmp/CheckSymbolExists.c
+Linking C executable cmTC_132a6
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_132a6.dir/link.txt --verbose=1
+/usr/bin/cc      -rdynamic CMakeFiles/cmTC_132a6.dir/CheckSymbolExists.c.o  -o cmTC_132a6 
+CMakeFiles/cmTC_132a6.dir/CheckSymbolExists.c.o: In function `main':
+CheckSymbolExists.c:(.text+0x1b): undefined reference to `pthread_create'
+collect2: error: ld returned 1 exit status
+CMakeFiles/cmTC_132a6.dir/build.make:97: recipe for target 'cmTC_132a6' failed
+make[1]: *** [cmTC_132a6] Error 1
+make[1]: Leaving directory '/home/munjunwoo/server/build/CMakeFiles/CMakeTmp'
+Makefile:126: recipe for target 'cmTC_132a6/fast' failed
+make: *** [cmTC_132a6/fast] Error 2
+
+File /home/munjunwoo/server/build/CMakeFiles/CMakeTmp/CheckSymbolExists.c:
+/* */
+#include <pthread.h>
+
+int main(int argc, char** argv)
+{
+  (void)argv;
+#ifndef pthread_create
+  return ((int*)(&pthread_create))[argc];
+#else
+  (void)argc;
+  return 0;
+#endif
+}
+
+Performing C++ SOURCE FILE Test HAVE_IS_SAME failed with the following output:
+Change Dir: /home/munjunwoo/server/build/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/make" "cmTC_d1e3e/fast"
+/usr/bin/make -f CMakeFiles/cmTC_d1e3e.dir/build.make CMakeFiles/cmTC_d1e3e.dir/build
+make[1]: Entering directory '/home/munjunwoo/server/build/CMakeFiles/CMakeTmp'
+Building CXX object CMakeFiles/cmTC_d1e3e.dir/src.cxx.o
+/usr/bin/c++    -DHAVE_IS_SAME  -std=c++11   -o CMakeFiles/cmTC_d1e3e.dir/src.cxx.o -c /home/munjunwoo/server/build/CMakeFiles/CMakeTmp/src.cxx
+/home/munjunwoo/server/build/CMakeFiles/CMakeTmp/src.cxx:1:11: error: ‘::main’ must return ‘int’
+ void main() { return is_same<bool,char>::value; }
+           ^
+/home/munjunwoo/server/build/CMakeFiles/CMakeTmp/src.cxx: In function ‘int main()’:
+/home/munjunwoo/server/build/CMakeFiles/CMakeTmp/src.cxx:1:22: error: ‘is_same’ was not declared in this scope
+ void main() { return is_same<bool,char>::value; }
+                      ^~~~~~~
+/home/munjunwoo/server/build/CMakeFiles/CMakeTmp/src.cxx:1:30: error: expected primary-expression before ‘bool’
+ void main() { return is_same<bool,char>::value; }
+                              ^~~~
+/home/munjunwoo/server/build/CMakeFiles/CMakeTmp/src.cxx:1:30: error: expected ‘;’ before ‘bool’
+/home/munjunwoo/server/build/CMakeFiles/CMakeTmp/src.cxx:1:34: error: expected unqualified-id before ‘,’ token
+ void main() { return is_same<bool,char>::value; }
+                                  ^
+/home/munjunwoo/server/build/CMakeFiles/CMakeTmp/src.cxx:1:35: error: expected unqualified-id before ‘char’
+ void main() { return is_same<bool,char>::value; }
+                                   ^~~~
+CMakeFiles/cmTC_d1e3e.dir/build.make:65: recipe for target 'CMakeFiles/cmTC_d1e3e.dir/src.cxx.o' failed
+make[1]: *** [CMakeFiles/cmTC_d1e3e.dir/src.cxx.o] Error 1
+make[1]: Leaving directory '/home/munjunwoo/server/build/CMakeFiles/CMakeTmp'
+Makefile:126: recipe for target 'cmTC_d1e3e/fast' failed
+make: *** [cmTC_d1e3e/fast] Error 2
+
+Source file was:
+void main() { return is_same<bool,char>::value; }
+Determining if the include file sys/endian.h exists failed with the following output:
+Change Dir: /home/munjunwoo/server/build/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/make" "cmTC_5b88b/fast"
+/usr/bin/make -f CMakeFiles/cmTC_5b88b.dir/build.make CMakeFiles/cmTC_5b88b.dir/build
+make[1]: Entering directory '/home/munjunwoo/server/build/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_5b88b.dir/CheckIncludeFile.c.o
+/usr/bin/cc    -o CMakeFiles/cmTC_5b88b.dir/CheckIncludeFile.c.o   -c /home/munjunwoo/server/build/CMakeFiles/CMakeTmp/CheckIncludeFile.c
+/home/munjunwoo/server/build/CMakeFiles/CMakeTmp/CheckIncludeFile.c:1:10: fatal error: sys/endian.h: No such file or directory
+ #include <sys/endian.h>
+          ^~~~~~~~~~~~~~
+compilation terminated.
+CMakeFiles/cmTC_5b88b.dir/build.make:65: recipe for target 'CMakeFiles/cmTC_5b88b.dir/CheckIncludeFile.c.o' failed
+make[1]: *** [CMakeFiles/cmTC_5b88b.dir/CheckIncludeFile.c.o] Error 1
+make[1]: Leaving directory '/home/munjunwoo/server/build/CMakeFiles/CMakeTmp'
+Makefile:126: recipe for target 'cmTC_5b88b/fast' failed
+make: *** [cmTC_5b88b/fast] Error 2
+
+
+Determining if the include file sys/byteorder.h exists failed with the following output:
+Change Dir: /home/munjunwoo/server/build/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/make" "cmTC_669fb/fast"
+/usr/bin/make -f CMakeFiles/cmTC_669fb.dir/build.make CMakeFiles/cmTC_669fb.dir/build
+make[1]: Entering directory '/home/munjunwoo/server/build/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_669fb.dir/CheckIncludeFile.c.o
+/usr/bin/cc    -o CMakeFiles/cmTC_669fb.dir/CheckIncludeFile.c.o   -c /home/munjunwoo/server/build/CMakeFiles/CMakeTmp/CheckIncludeFile.c
+/home/munjunwoo/server/build/CMakeFiles/CMakeTmp/CheckIncludeFile.c:1:10: fatal error: sys/byteorder.h: No such file or directory
+ #include <sys/byteorder.h>
+          ^~~~~~~~~~~~~~~~~
+compilation terminated.
+CMakeFiles/cmTC_669fb.dir/build.make:65: recipe for target 'CMakeFiles/cmTC_669fb.dir/CheckIncludeFile.c.o' failed
+make[1]: *** [CMakeFiles/cmTC_669fb.dir/CheckIncludeFile.c.o] Error 1
+make[1]: Leaving directory '/home/munjunwoo/server/build/CMakeFiles/CMakeTmp'
+Makefile:126: recipe for target 'cmTC_669fb/fast' failed
+make: *** [cmTC_669fb/fast] Error 2
+
+

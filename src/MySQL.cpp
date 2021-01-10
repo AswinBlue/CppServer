@@ -1,13 +1,19 @@
 #include "MySQL.h"
 #include "Logger.h"
 
-MySQL::MySQL() {
-    session(MySQL::URL);
+MySQL::MySQL(const std::string URI) {
+// "mysqlx://RPG:pswd@127.0.0.1";
+    MySQL::URI = URI;
+    mysqlx::Session session(URI);
     LOG_INFO("MySQL: session created");
 }
 
-MySQL::find (char& table, char& key) {
-    Schema sch = session.getSchema(table);
-    Collection coll = sch.createCollection(key, true);
+MySQL::~MySQL() {
+    mysqlx::getSession(MySQL::URI).close();
+    LOG_INFO("MySQL: session closed");
+}
 
+bool MySQL::find (const std::string& table, const std::string& key) {
+    mysqlx::Schema sch = mysqlx::getSession(MySQL::URI).getSchema(table);
+    mysqlx::Collection coll = sch.createCollection(key);
 }

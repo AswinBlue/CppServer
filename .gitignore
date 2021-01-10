@@ -1,0 +1,8 @@
+# directory to ignore
+lib/
+build/
+CMakeFiles/
+
+# file to ignore
+*.sw*
+CMakeCache.txt

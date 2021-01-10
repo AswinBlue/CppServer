@@ -1,1 +1,0 @@
-/usr/bin/c++  -g   CMakeFiles/RPG_server.out.dir/Logger.cpp.o CMakeFiles/RPG_server.out.dir/main.cpp.o CMakeFiles/RPG_server.out.dir/Map.cpp.o CMakeFiles/RPG_server.out.dir/MySQL.cpp.o CMakeFiles/RPG_server.out.dir/Server.cpp.o  -o RPG_server.out -Wl,-rpath,/home/munjunwoo/server/build/lib/build/spdlog ../lib/build/spdlog/libspdlogd.so.1.8.1 -pthread 

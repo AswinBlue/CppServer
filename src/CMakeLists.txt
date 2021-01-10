@@ -3,12 +3,8 @@ SET ( CMAKE_BUILD_TYPE Debug )
 SET ( CMAKE_VERBOSE_MAKEFILE true )
 add_library(main_source_lib ${SRC_FILES})
 
-
-target_link_libraries(main_source_lib
-    # for spdlog
-    PUBLIC spdlog::spdlog
-    # for mysql-connector-cpp
-)
+# boost
+find_package(Boost COMPONENTS filesystem thread REQUIRED)
 
 target_include_directories(main_source_lib
     PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include
@@ -19,6 +15,18 @@ target_include_directories(main_source_lib
 #    PUBLIC ${CMAKE_SOURCE_DIR}/lib/rapidjson/include
     PUBLIC ${RAPIDJSON_PATH}/include
     # for mysql-connector-cpp
-    PUBLIC ${MYSQL_CONNECTOR_CPP_PATH}/include
+    PUBLIC ${MYSQL_CONNECTOR_CPP_PATH}/include/
+)
+
+link_directories(${MYSQL_CONNECTOR_CPP_PATH}/include)
+
+target_link_libraries(main_source_lib
+    # for spdlog
+    PUBLIC spdlog::spdlog
+    # for boost
+    ${Boost_FILESYSTEM_LIBRARY}
+    ${Boost_THREAD_LIBRARY}
+# for mysql
+    mysqlcppconn8
 )
 

@@ -1,9 +1,12 @@
 #include <mysqlx/xdevapi.h>
+#include <string>
 
 class MySQL {
 private:
-    const char *URL = "mysqlx://RPG@127.0.0.1";
-    Session session;
+    std::string URI = NULL;
 public:
     MySQL();
+    MySQL(const std::string URI);
+    ~MySQL();
+    bool find(const std::string& table, const std::string& key);
 };

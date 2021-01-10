@@ -1,1 +1,0 @@
-/usr/bin/c++  -O2 -g -DNDEBUG   CMakeFiles/RPG_server.out.dir/main.cpp.o  -o RPG_server.out -Wl,-rpath,/home/munjunwoo/server/build/lib/build/spdlog src/libmain_source_lib.a lib/build/spdlog/libspdlog.so.1.8.1 -pthread 

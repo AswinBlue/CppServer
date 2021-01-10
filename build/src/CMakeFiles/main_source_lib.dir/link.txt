@@ -1,2 +1,0 @@
-/usr/bin/ar qc libmain_source_lib.a  CMakeFiles/main_source_lib.dir/Logger.cpp.o CMakeFiles/main_source_lib.dir/Map.cpp.o CMakeFiles/main_source_lib.dir/MySQL.cpp.o CMakeFiles/main_source_lib.dir/Server.cpp.o
-/usr/bin/ranlib libmain_source_lib.a

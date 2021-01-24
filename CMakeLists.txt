@@ -4,10 +4,11 @@ MESSAGE(project name : ${CMAKE_PROJECT_NAME})
 
 SET ( SPDLOG_PATH ${CMAKE_SOURCE_DIR}/lib/spdlog)
 SET ( RAPIDJSON_PATH ${CMAKE_SOURCE_DIR}/lib/rapidjson)
-SET ( MYSQL_CONNECTOR_CPP_PATH ${CMAKE_SOURCE_DIR}/lib/mysql-connector-cpp)
+#SET ( MYSQL_CONNECTOR_CPP_PATH ${CMAKE_SOURCE_DIR}/lib/mysql-connector-cpp)
+#SET ( MYSQL_CONNECTOR_CPP_PATH /usr/local/mysql/connector-c++-8.0)
 
 add_subdirectory(src)
-add_subdirectory(lib)
+#add_subdirectory(lib)
 
 add_executable(${CMAKE_PROJECT_NAME}.out main.cpp)
 
@@ -16,5 +17,5 @@ target_link_libraries(${CMAKE_PROJECT_NAME}.out
 )
 
 target_include_directories(${CMAKE_PROJECT_NAME}.out
-    PRIVATE src/include
+    PRIVATE src
 )

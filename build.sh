@@ -1,4 +1,4 @@
 #!/bin/bash
-cd build
-cmake ..
+cd /home/munjunwoo/server/build
+cmake .. 
 make

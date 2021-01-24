@@ -2,7 +2,8 @@
 lib/
 build/
 CMakeFiles/
-
+logs/
 # file to ignore
 *.sw*
 CMakeCache.txt
+

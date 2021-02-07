@@ -3,10 +3,16 @@
 
 class MySQL {
 private:
-    std::string URI = NULL;
+    std::string URI;
+    std::string host;
+    int port = 33060;
+    std::string user;
+    std::string password;
+
 public:
-    MySQL();
-    MySQL(const std::string URI);
+    MySQL(const std::string& host, const int port, const std::string& user, const std::string& password);
     ~MySQL();
-    bool find(const std::string& table, const std::string& key);
+    mysqlx::DocResult find(const std::string& database, const std::string& table, const char* query);
+    mysqlx::Result upload(const std::string& database, const std::string& table, std::list<std::string> docs);
+    mysqlx::Result remove(const std::string& database, const std::string& table, const char* query);
 };

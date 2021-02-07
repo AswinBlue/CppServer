@@ -8,6 +8,7 @@
 
 #include <cstring>
 #include <iostream>
+#include <list>
 
 #include "User.h"
 #include "Server.h"
@@ -32,6 +33,11 @@ Server::Server() {
 }
 
 int Server::setup(char* addr, int port) {
+    // connect to DB
+    LOG_DEBUG("DB setting start");
+    this->db = new MySQL("localhost", 33060, "RPG", "Lge123$%");
+    LOG_DEBUG("DB setting success");
+
     // set epoll for multiplexing
     epoll_fd = epoll_create(1);
     if (epoll_fd == -1) {
@@ -191,3 +197,29 @@ int Server::handleClientPacket(struct epoll_event *event) {
     // cout << "from client(" << event->data.fd << ") : " << buff << "\n";
     // TODO : need to be coded
 }
+
+int Server::updateDB() {
+    LOG_INFO("updateDB");
+    list<std::string> lst;
+//    mysqlx::DbDoc doc(R"({"user": "a", "score": 1, "time": 1, "stage": 1})");
+    
+//        R"({"user": "b", "score": 100, "time": 1, "stage": 1}))",
+//        R"({"user": "c", "score": 100, "time": 10, "stage": 1})",
+//        R"({"user": "d", "score": 100, "time": 1, "stage": 3})");
+    lst.push_back(R"({"user": "a", "score": 1, "time": 1, "stage": 1})");
+    lst.push_back(R"({"user": "c", "score": 100, "time": 10, "stage": 1})");
+    lst.push_back(R"({"user": "d", "score": 100, "time": 1, "stage": 3})");
+    this->db->upload("RPG", "scoreboard", lst);
+    mysqlx::DocResult docs = this->db->find("RPG", "scoreboard", "true");
+    for (mysqlx::DbDoc doc : docs) {
+        // LOG_DEBUG(doc.get_json());
+        // TODO : find way to print with spdlog api
+        std::cout << doc << std::endl;
+        for (mysqlx::Field fld : doc) {
+            // LOG_DEBUG("field: ", fld, "doc[field]: ", doc[fld]);
+            std::cout << fld << " " << doc[fld] << std::endl;
+        }
+    }
+
+}
+

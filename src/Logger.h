@@ -1,15 +1,15 @@
 #include <spdlog/spdlog.h>
 
-#define LOG_WARN(X)    spdlog::warn(X)
-#define LOG_CRTCL(X)   spdlog::critical(X)
-#define LOG_ERROR(X)   spdlog::error(X)
-#define LOG_DEBUG(X)   spdlog::debug(X)
-#define LOG_INFO(X)    spdlog::info(X)
-#define LOG_DUMP()    spdlog::dump_backtrace()
+#define LOG_CRTCL(...)      spdlog::critical(__VA_ARGS__)
+#define LOG_ERROR(...)      spdlog::error(__VA_ARGS__)
+#define LOG_WARN(...)       spdlog::warn(__VA_ARGS__)
+#define LOG_DEBUG(...)      spdlog::debug(__VA_ARGS__)
+#define LOG_INFO(...)       spdlog::info(__VA_ARGS__)
+#define LOG_DUMP()          spdlog::dump_backtrace()
 
 class Logger {
 private:
 
 public:
-    Logger();
+    Logger(spdlog::level::level_enum level);
 };

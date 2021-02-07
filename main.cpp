@@ -1,25 +1,28 @@
 #include <iostream>
 #include "Server.h"
 #include "Logger.h"
-#include "MySQL.h"
+#include "main.h"
 
 #define PORT 3600
 using namespace std;
 
+// global variables
+Server server;
+
 bool init() {
     // log setting
-    Logger *logger = new Logger();
+    Logger *logger = new Logger(LOG_LEVEL_DEBUG);
     LOG_DEBUG("Logger setting success");
 
-    // connect to DB
-    MySQL db("RPG:Lge123$%@localhost");
-
     // launch server
-    Server server;
+    LOG_DEBUG("launch server");
     if (server.setup(NULL, PORT) < 0){
         LOG_ERROR("Server initialization failed!");
         return false;
     }
+    // TODO : for test, remove this
+    server.updateDB();
+
     if (server.start()) {
         LOG_WARN("Server start failed!");
         return false;

@@ -30,6 +30,7 @@ Server::Server() {
     this->ssock = -1;
     this->connected_client = 0;
     this->client_fd[MAX_FD] = {0, };
+    this->is_running = false;
 }
 
 int Server::setup(char* addr, int port) {
@@ -84,12 +85,23 @@ int Server::setup(char* addr, int port) {
         LOG_ERROR("epoll_ctl add server socket error");
         return -1;
     }
+    return 0;
 }
-
 int Server::start() {
+    if (this->is_running) {
+        LOG_WARN("epoll server is already running");
+        return -1;
+    }
+    this-> is_running = true;
+    LOG_DEBUG("start listening with thread");
+    this->m_server_thread = boost::thread(boost::bind(&Server::_start, this));
+    //LOG_DEBUG(m_server_thread.get_id());
+    return 0;
+}
+int Server::_start() {
     struct epoll_event events[MAX_FD] = {0, };
     // infinite loop
-    while (true) {
+    while (this->is_running) {
         // wait event forever
         int event_num = epoll_wait(epoll_fd, events, MAX_FD, -1);
         if (event_num == -1) {
@@ -122,16 +134,29 @@ int Server::start() {
             }
         } // -> for
     } // -> while
+    return 0;
 }
 
 int Server::stop() {
+    if (!(this->is_running)) {
+        LOG_WARN("cannot stop, epoll server is not running");
+        return -1;
+    }
+    // close server, no more listening
     close(ssock);
+    // close all client socket
     for (int i = 0; i < MAX_FD; i++) {
         if (client_fd[i] > 0) {
             close(i);
         }
     }
     close(epoll_fd);
+    // change status
+    this->is_running = false;
+    // join thread
+    this->m_server_thread.join();
+
+    return 0;
 }
 
 int Server::addClient(int csock) {
@@ -156,6 +181,7 @@ int Server::removeClient(int csock) {
     cout << "client leaved : (" << csock << ")\n";
     client_fd[csock] = 0;
     connected_client--;
+    return 0;
 }
 
 int Server::handleClientPacket(struct epoll_event *event) {
@@ -196,8 +222,10 @@ int Server::handleClientPacket(struct epoll_event *event) {
 
     // cout << "from client(" << event->data.fd << ") : " << buff << "\n";
     // TODO : need to be coded
+    return 0;
 }
 
+// TODO : this is test version, need to build up
 int Server::updateDB() {
     LOG_INFO("updateDB");
     list<std::string> lst;
@@ -220,6 +248,6 @@ int Server::updateDB() {
             std::cout << fld << " " << doc[fld] << std::endl;
         }
     }
-
+    return 0;
 }
 

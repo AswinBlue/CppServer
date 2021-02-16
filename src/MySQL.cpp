@@ -3,6 +3,8 @@
 
 #include <list>
 #include <iostream>
+
+
 using namespace std;
 
 MySQL::MySQL(const std::string& host, const int port, const std::string& user, const std::string& password) {
@@ -101,7 +103,7 @@ mysqlx::Result MySQL::remove (const std::string& database, const std::string& ta
         mysqlx::Session session = mysqlx::getSession(this->host, this->port, this->user, this->password);
         mysqlx::Schema sch = session.getSchema(database);
         mysqlx::Collection coll = sch.createCollection(table, true);
-        r = coll.remove(query).execute(); // remove all collections
+        r = coll.remove(query).execute(); // remove all collections if query == "true"
         LOG_DEBUG("remove ok");
         return r;
     }
@@ -117,5 +119,100 @@ mysqlx::Result MySQL::remove (const std::string& database, const std::string& ta
         LOG_ERROR(ex);
         return r;
     }
+}
 
+/* 
+    @r: collections to modify
+    @field : field to change
+    @value : value to change
+*/
+template<typename T>
+mysqlx::CollectionModify MySQL::modify_set (mysqlx::CollectionModify& r, const char* field, const T value) {
+    LOG_DEBUG("modify db");
+    try {
+        r = r.set(field, value);
+        LOG_DEBUG("add field to collection ok");
+        return r;
+    }
+    catch (const mysqlx::Error &err) {
+        LOG_ERROR(err.what());
+        return r;
+    }
+    catch (std::exception &ex) {
+        LOG_ERROR(ex.what());
+        return r;
+    }
+    catch (const char *ex) {
+        LOG_ERROR(ex);
+        return r;
+    }
+}
+
+/* 
+    @r: collections to modify
+    @field : field to change
+    @value : value to change
+*/
+template<typename T>
+mysqlx::CollectionModify MySQL::modify_arrayAppend (mysqlx::CollectionModify& r, const char* field, const T value) {
+    LOG_DEBUG("modify db");
+    try {
+        r = r.arrayAppend(field, value);
+        LOG_DEBUG("add item to array in collection ok");
+        return r;
+    }
+    catch (const mysqlx::Error &err) {
+        LOG_ERROR(err.what());
+        return r;
+    }
+    catch (std::exception &ex) {
+        LOG_ERROR(ex.what());
+        return r;
+    }
+    catch (const char *ex) {
+        LOG_ERROR(ex);
+        return r;
+    }
+}
+
+/* 
+    @r: collections to modify
+    @field : field to change
+*/
+mysqlx::CollectionModify MySQL::modify_unset (mysqlx::CollectionModify& r, const char* field) {
+    LOG_DEBUG("modify db");
+    try {
+        r = r.unset(field);
+        LOG_DEBUG("remove field in collection ok");
+        return r;
+    }
+    catch (const mysqlx::Error &err) {
+        LOG_ERROR(err.what());
+        return r;
+    }
+    catch (std::exception &ex) {
+        LOG_ERROR(ex.what());
+        return r;
+    }
+    catch (const char *ex) {
+        LOG_ERROR(ex);
+        return r;
+    }
+}
+
+/*
+    @database : schema, correspond to database
+    @table : collection, correspond to table;
+    @query: query for find datas
+*/
+mysqlx::CollectionModify MySQL::modify (const std::string& database, const std::string& table, const char* query) {
+    // TODO : took these into try -catch phrase
+    LOG_DEBUG("find db to modify");
+    mysqlx::Session session = mysqlx::getSession(this->host, this->port, this->user, this->password);
+    mysqlx::Schema sch = session.getSchema(database);
+    mysqlx::Collection coll = sch.createCollection(table, true);
+    mysqlx::CollectionModify r = coll.modify(query); // select all collections if query == "true"
+
+    LOG_DEBUG("found collection to modify ok");
+    return r;
 }

@@ -1,17 +1,20 @@
-SET( SRC_FILES Logger.cpp Map.cpp  MySQL.cpp  Server.cpp)
+SET( SRC_FILES Logger.cpp Map.cpp  MySQL.cpp  Server.cpp Asio.cpp)
 SET ( CMAKE_BUILD_TYPE Debug )
 SET ( CMAKE_VERBOSE_MAKEFILE true )
 add_library(main_source_lib ${SRC_FILES})
 
 # boost
-find_package(Boost COMPONENTS filesystem thread REQUIRED)
+# don't need to add asio here
+find_package(Boost 1.75.0 REQUIRED COMPONENTS filesystem thread)
 
 # add header directories : same as '-I' option
 target_include_directories(main_source_lib
+    # for /usr/local/include
+    PRIVATE include
     # for spdlog
     PUBLIC ${SPDLOG_PATH}/include
     # for rapidjson
-     ${RAPIDJSON_PATH}/include
+    ${RAPIDJSON_PATH}/include
     # for mysql-connector-cpp
     PUBLIC /usr/local/mysql/connector-c++-/include
     # for boost
@@ -21,8 +24,8 @@ target_include_directories(main_source_lib
 #link_directories(${MYSQL_CONNECTOR_CPP_PATH}/include)
 
 # add library paths: same as '-L' option
-# for mysql-connector-cpp
 target_link_directories(main_source_lib
+    # for mysql-connector-cpp
     PUBLIC
     /usr/local/mysql/connector-c++-/lib64/debug
 )
@@ -36,6 +39,7 @@ target_link_libraries(main_source_lib
     # for boost
     ${Boost_FILESYSTEM_LIBRARY}
     ${Boost_THREAD_LIBRARY}
+    ${Boost_ASIO_LIBRARY}
 # for mysql
     mysqlcppconn8
 )

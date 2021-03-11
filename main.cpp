@@ -2,6 +2,7 @@
 #include "Server.h"
 #include "Logger.h"
 #include "main.h"
+#include "Asio.h"
 
 #define PORT 3600
 using namespace std;
@@ -30,9 +31,17 @@ bool init() {
     return true;
 }
 
+bool test() {
+    Asio a();
+
+}
+
 int main(int argc, char* argv[]) {
+    /*
     if (init()) {
         return -1;
     }
+    */
+    test();
     return 0;
 }

@@ -1,4 +1,4 @@
-#include "Message.h"
+#include "net_message.h"
 using namespace std;
 
 enum class Sample : uint32_t 

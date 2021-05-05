@@ -1,4 +1,3 @@
-#!/bin/bash
-cd /home/munjunwoo/server/test/build
-cmake .. 
-make
+cd ~/server/test/build
+cmake ..
+make -j16

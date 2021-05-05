@@ -22,7 +22,7 @@ namespace net
         // return size of message
         size_t size() const
         {
-            return sizeof(message_header<T>) + body.size();
+            return body.size();
         }
 
         // friend function, treated as global function(not a member function)
@@ -74,12 +74,12 @@ namespace net
         message<T> msg;
 
         // friend property string maker
-        friend std::ostream& operation << (std::ostream& os, const traced_message<t>& msg)
+        friend std::ostream& operator << (std::ostream& os, const traced_message<T>& message)
         {
-            os << msg.msg;
+            os << message.msg;
             return os;
         }
-    }
+    };
 }
 
 #endif

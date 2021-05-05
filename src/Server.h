@@ -1,27 +1,60 @@
-#include "MySQL.h"
-#include <boost/thread.hpp>
+#ifndef __SERVER_H__
+#define __SERVER_H__
 
-#define MAX_FD 1024
-#define LISTEN_QUEUE 16
+#include "net_common.h"
+#include "net_tsqueue.h"
+#include "net_message.h"
+#include "net_client.h"
+#include "net_server.h"
+#include "net_connection.h"
+#include "MessageTypes.h"
 
-class Server {
-private :
-    int epoll_fd;
-    int ssock;
-    int connected_client;
-    int client_fd[MAX_FD];
-    boost::thread m_server_thread;
-    bool is_running;
-    MySQL* db;
+
+class Server : public net::server_interface <MessageTypes>
+{
 public:
-    ~Server();
-    Server();
-    int setup(char* addr, int port); // 'addr' can be NULL
-    int start();
-    int _start();
-    int stop();
-    int addClient(int csock);
-    int removeClient(int csock);
-    int handleClientPacket(struct epoll_event* event);
-    int updateDB();
+	Server(uint16_t nPort) : net::server_interface<MessageTypes>(nPort)
+	{} 
+
+protected:
+	virtual bool OnClientConnect(std::shared_ptr< net::connection<MessageTypes> > client)
+	{
+		net::message<MessageTypes> msg;
+		msg.header.id = MessageTypes::ServerAccept;
+		client->Send(msg);
+		return true;
+	}
+
+	// Called when a client appears to have disconnected
+	virtual void OnClientDisconnect(std::shared_ptr< net::connection<MessageTypes> > client)
+	{
+		std::cout << "Removing client [" << client->GetID() << "]\n";
+	}
+
+	// Called when a message arrives
+	virtual void OnMessage(std::shared_ptr< net::connection<MessageTypes> > client, net::message<MessageTypes>& msg)
+	{
+		switch (msg.header.id)
+		{
+		case MessageTypes::ServerPing:
+			std::cout << "[" << client->GetID() << "]: Server Ping\n";
+
+			// Simply bounce message back to client
+			client->Send(msg);
+            break;
+
+		case MessageTypes::MessageAll:
+			std::cout << "[" << client->GetID() << "]: Message All\n";
+
+			// Construct a new message and send it to all clients
+			net::message<MessageTypes> msg;
+			msg.header.id = MessageTypes::ServerMessage;
+			msg << client->GetID();
+			MessageAllClients(msg, client);
+            break;
+		}
+        fflush(stdout);
+	}
 };
+
+#endif

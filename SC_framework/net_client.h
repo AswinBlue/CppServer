@@ -11,7 +11,8 @@ namespace net
     template <typename T>
     class client_interface
     {
-        client_interface() : m_socket(m_context)
+    public:
+        client_interface()
         {
             // TODO : Initialise the socket with the io context
         }
@@ -22,28 +23,32 @@ namespace net
         }
 
     public:
-        bool Connect(const std::string& hst, const uint16_t port)
+        bool Connect(const std::string& host, const uint16_t port)
         {
             try
             {
-                // Create connection
-                m_connection = std::make_unique< connection<T> >(); // TODO : fill the ()
-
                 // Resolve address into tangible physical address
                 // rather than using direct ipaddress, asio provides 'resolver' which transfer url into address
-                boost::ip::tcp::resolver resolver(m_context);
+                boost::asio::ip::tcp::resolver resolver(m_context);
                 // if resolver can't produce ip address, it will throw exception
-                m_endpoints = resolver.resolve(host, std::to_string(port)); 
+                boost::asio::ip::tcp::resolver::results_type endpoints = resolver.resolve(host, std::to_string(port));
+
+                // Create connection
+                m_connection = std::make_unique< connection<T> >(
+                    connection<T>::owner::client,
+                    m_context,
+                    boost::asio::ip::tcp::socket(m_context),
+                    m_qMessageIn);
 
                 // Connect to server physically
-                m_connection -> ConnectToServer(m_endpoints);
+                m_connection -> ConnectToServer(endpoints);
 
                 // Start context thread
                 thrContext = std::thread([this]() { m_context.run(); });
             }
             catch (std::exception& e)
             {
-                std::cerr < "Client Exception: " << e.what() << "\n";
+                std::cerr << "Client Exception: " << e.what() << "\n";
                 return false;
             }
             return true;
@@ -77,12 +82,24 @@ namespace net
             }
         }
 
+        // send message to server
+        void Send(const message<T>& msg)
+        {
+            if (IsConnected())
+                m_connection->Send(msg);
+        }
+
+        // get message from server
+        tsqueue< traced_message<T> >& Incoming()
+        {
+            return m_qMessageIn;
+        }
+
     protected:
         // asio object to handle data transmission
         boost::asio::io_context m_context;
         // thread for asio to work
         std::thread thrContext;
-        boost::asio::ip::tcp::socket m_socket;
         std::unique_ptr< connection<T> > m_connection;
     private:
         // thread safe queue of incoming messages

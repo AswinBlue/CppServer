@@ -1,16 +1,16 @@
 #ifndef __THREAD_SAFE_QUEUE_H__
-#define __THREAD_SAFE__QUEUE_H__
+#define __THREAD_SAFE_QUEUE_H__
 
 #include "net_common.h"
 
 namespace net
 {
     template<typename T>
-    class TSQueue
+    class tsqueue
     {
     public :
-        TSQueue() = default; // default constructor
-        TSQueue(const tsqueue<T>&) = delete; // do not create copying constructor, becuase it has mutex in it
+        tsqueue() = default; // default constructor
+        tsqueue(const tsqueue<T>&) = delete; // do not create copying constructor, becuase it has mutex in it
         virtual ~tsqueue() { clear(); } // desctructor that clear queue
 
         /* add guarding rules to the standard functions provided to dequeue */
@@ -35,7 +35,7 @@ namespace net
             deqQueue.emplace_back(std::move(item));
         }
 
-        void empty()
+        bool empty()
         {
             std::scoped_lock lock(muxQueue); // mutex lock
             return deqQueue.empty();
@@ -43,26 +43,26 @@ namespace net
 
         size_t count()
         {
-            std::scope_lock lock(muxQueue);
+            std::scoped_lock lock(muxQueue);
             return deqQueue.size();
         }
         void clear()
         {
-            std::scope_lock lock(muxQueue);
+            std::scoped_lock lock(muxQueue);
             deqQueue.clear();
         }
 
 
         T pop_front()
         {
-            std::scope_lock lock(muxQueue);
+            std::scoped_lock lock(muxQueue);
             auto t = std::move(deqQueue.front()); // cache the item
             deqQueue.pop_front(); // remove the item
             return t; // return the item
         }
         T pop_back()
         {
-            std::scope_lock lock(muxQueue);
+            std::scoped_lock lock(muxQueue);
             auto t = std::move(deqQueue.front()); // cache the item
             deqQueue.pop_back(); // remove the item
             return t; // return the item
@@ -70,7 +70,7 @@ namespace net
     protected:
         std::mutex muxQueue;
         std::deque<T> deqQueue;
-    }
+    };
 }
 
 #endif

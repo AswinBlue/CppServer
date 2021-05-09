@@ -40,17 +40,26 @@ protected:
 			std::cout << "[" << client->GetID() << "]: Server Ping\n";
 
 			// Simply bounce message back to client
-			client->Send(msg);
+            MessageClient(client, msg);
             break;
 
 		case MessageTypes::MessageAll:
+        {
 			std::cout << "[" << client->GetID() << "]: Message All\n";
 
 			// Construct a new message and send it to all clients
-			net::message<MessageTypes> msg;
-			msg.header.id = MessageTypes::ServerMessage;
-			msg << client->GetID();
-			MessageAllClients(msg, client);
+			net::message<MessageTypes> msg_all;
+			msg_all.header.id = MessageTypes::ServerMessage;
+			msg_all << client->GetID();
+            std::cout << msg_all;
+			MessageAllClients(msg_all, client);
+            break;
+        }
+        default:
+			std::cout << "[" << client->GetID() << "]: Echo Client\n";
+            // echo
+            MessageClient(client, msg);
+            // do nothing
             break;
 		}
         fflush(stdout);

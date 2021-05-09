@@ -26,7 +26,7 @@ void startNetwork() {
     }
     // start listening
     while (true) {
-        server.Update(-1);
+        server.Update(-1, true);
     }
 }
 

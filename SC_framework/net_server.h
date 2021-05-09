@@ -80,7 +80,7 @@ namespace net
                         {
                             // push connection to deque
                             m_deqConnections.push_back(std::move(new_conn));
-                            m_deqConnections.back() -> ConnectToClient(nIDCounter++); // allocate an id to connection
+                            m_deqConnections.back() -> ConnectToClient(this, nIDCounter++); // allocate an id to connection
                             std::cout << "[" << m_deqConnections.back()->GetID() << "] Aonnection Accomplished\n";
                         }
                         else
@@ -99,11 +99,12 @@ namespace net
                 });
         }
         // ASIO
-        void MessagClient(std::shared_ptr< connection<T> > client, const message<T>& msg)
+        void MessageClient(std::shared_ptr< connection<T> > client, const message<T>& msg)
         {
             // check 'client' is not null and isConnected
             if (client && client->IsConnected())
             {
+                std::cout <<"DEBUG: MessageClient send message\n";
                 client->Send(msg);
             }
             else
@@ -128,8 +129,10 @@ namespace net
                 if (client && client->IsConnected())
                 {
                     // ignore specific  client
-                    if (client != pIgnoreClient)
+                    if (client != pIgnoreClient) {
+                        std::cout << "DEBUG: MessageAllClients send message\n";
                         client->Send(msg);
+                    }
                 }
                 else
                 {
@@ -150,13 +153,17 @@ namespace net
         }
 
         // allow users to decide when is the most appropriate time to handle messages
-        void Update(size_t nMaxMessages = -1) // -1 means maximum
+        // nMaxMessage : -1 means maximum
+        // bWait : wait for client's next message or sleep
+        void Update(size_t nMaxMessages = -1, bool bWait = false)
         {
             /* when server gets busy transfering messages, this function never returns 
              * and constantly process messages
              * if so, the serverside application logic wouldn't be update at all
              * so we give max size constrain to prevent this happening
              */
+            if (bWait) m_qMessageIn.wait(); // wait until new message come, save CPU resources
+
             size_t nMessageCount = 0;
             while (nMessageCount < nMaxMessages && !m_qMessageIn.empty())
             {
@@ -173,6 +180,7 @@ namespace net
         // can be overwrited by developer
         virtual bool OnClientConnect(std::shared_ptr< connection<T> > client)
         {
+            // TODO : filter connections we don't expected
             // return false on default. developer must override this
             // decide whether accept new client or decline request
             return false;
@@ -188,6 +196,11 @@ namespace net
              * but we choosed to manage all the connections into serialized queue 
              * it's your choice, it's just frame work decision
              */
+        }
+    public:
+        // in server-side, called when a client is validated
+        virtual void OnClientValidated(std::shared_ptr< connection<T> > client)
+        {
         }
 
         // thread safe queue for incoming messages

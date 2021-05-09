@@ -36,31 +36,40 @@ public:
         std::cout << "Message All" << msg << "\n";
 	}
 
+    void SendMessage(std::string str)
+    {
+		net::message<MessageTypes> msg;
+        msg << str;
+		msg.header.id = MessageTypes::MessageAll;
+        Send(msg);
+        std::cout << "Send Message " << str << "\n";
+    }
+
 };
 
 void keyboardInput(CustomClient* c, bool* bQuit)
 {
-    char key = 0;
+    std::string key;
     do {
-        boost::this_thread::sleep(boost::posix_time::millisec(500));
+        boost::this_thread::sleep(boost::posix_time::millisec(100));
         std::cin >> key;
         std::cout << ">>" << key << "\n" << std::flush;
         fflush(stdin);
-        if (key == '1') {
+        if (!key.compare("1")) {
             c->PingServer();
         }
-        else if (key == '2') {
+        else if (!key.compare("2")) {
             c->MessageAll();
         }
-        else if (key == '3') {
+        else if (!key.compare("3")) {
             *bQuit = true;
             std::cout << "disconnect\n";
         }
         else {
-            std::cout << "unknown command\n";
+            c->SendMessage(key);
         }
         fflush(stdout);
-    } while( key != '3');
+    } while(!(*bQuit));
 }
 
 int main()
@@ -109,6 +118,10 @@ int main()
 					std::cout << "Hello from [" << clientID << "]\n" << std::flush;
 				}
 				break;
+                default:
+                {
+                    std::cout << "unknown type message came\n";
+                }
 				} // -> switch
 			}
 		}

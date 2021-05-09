@@ -27,7 +27,8 @@ namespace net
 
         // friend function, treated as global function(not a member function)
         friend std::ostream& operator << (std::ostream& os, const message<T>& msg) {
-            os << "MID: " << int(msg.header.id) << " Size:" << msg.header.size;
+            os << "MID: " << int(msg.header.id) << " Size: " << msg.header.size << "\n";
+            // std::copy(msg.body.begin(), msg.body.end(), std::ostream_iterator<uint8_t>(std::cout, ""));
             return os;
         }
 

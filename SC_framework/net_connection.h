@@ -7,6 +7,10 @@
 
 namespace net
 {
+    //Forward declare
+    template<typename T>
+    class server_interface;
+
     template<typename T>
     // provide shared pointer rather than raw pointer (this)
     class connection : public std::enable_shared_from_this< connection<T> >
@@ -28,6 +32,20 @@ namespace net
             // we made disparity
             m_nOwnerType = parent;
 
+            // Construct validation check data
+            if (m_nOwnerType == owner::server)
+            {
+                // if create random data. send it to server when 'WriteValidation()' called
+                m_nHandshakeOut = uint64_t(std::chrono::system_clock::now().time_since_epoch().count());
+                m_nHandshakeCheck = scramble(m_nHandshakeOut);
+            }
+            else
+            {
+                // need to wait Server to give 'm_nHandshakeIn'
+                m_nHandshakeIn = 0;
+                m_nHandshakeOut = 0;
+            }
+
         }
         virtual ~connection() {}
         uint32_t GetID() const
@@ -38,14 +56,20 @@ namespace net
     public:
         /* Server Side Functions */
         // called by server interface when server accepted a new client
-        bool ConnectToClient(uint32_t uid = 0)
+        bool ConnectToClient(net::server_interface<T>* server, uint32_t uid = 0)
         {
             if (m_nOwnerType == owner::server)
             {
                 if (m_socket.is_open())
                 {
                     id = uid;
-                    ReadHeader(); 
+
+                    // don't read message right after connection
+                    // read message after validation
+                    WriteValidation();
+                    ReadValidation(server);
+
+                    // ReadHeader(); 
                     /* ReadHeader function is a asio asynchronous funciton
                     * when server connect to server, we must start reading
                     * running ReadHeader function once, we don't have to care about when to read,
@@ -71,7 +95,8 @@ namespace net
                         if (!ec)
                         {
                             // make asio task to wait and read messages
-                            ReadHeader();
+                            ReadValidation();
+                            //ReadHeader();
                         }
                         else
                         {
@@ -108,6 +133,7 @@ namespace net
             boost::asio::post(m_asioContext,
                 [this, msg]()
                 {
+                    std::cout << "DEBUG: " << msg << "\n";
                     bool bWritingMessage = !m_qMessageOut.empty();
                     // we have to push message in our outgoint message queue first
                     m_qMessageOut.push_back(msg);
@@ -129,6 +155,7 @@ namespace net
                 {
                     if (!ec)
                     {
+                        std::cout << "DEBUG: ReadHeader " << m_msgTemporaryIn << " " << "\n";
                         // check it has appropriate length
                         if (m_msgTemporaryIn.header.size > 0)
                         {
@@ -161,6 +188,7 @@ namespace net
                 {
                     if (!ec)
                     {
+                        std::cout << "DEBUG: ReadBody " << m_msgTemporaryIn << " " << "\n";
                         AddToIncomingMessageQueue();
                         // std::cout << "ReadBody Finished\n";
                     }
@@ -248,6 +276,87 @@ namespace net
             // this case, wait for another header
             ReadHeader();
         }
+
+        /* 
+        * server need to validate whether connected client is one we need to business with
+        * send random number and get result, check if it is expected one
+        * validate with crypt function
+        */
+        uint64_t scramble(uint64_t nInput)
+        {
+            uint64_t out = nInput ^ 0x10904EFD665530C0;
+            out = (out & 0xFFFF0000FFFF0000) >> 4 | (out & 0xFFFF0000F0F0F0F0) >> 4;
+            return out ^ 0xCBCBDEFAACCBDBD;
+        }
+
+        void WriteValidation()
+        {
+            boost::asio::async_write(m_socket, boost::asio::buffer(&m_nHandshakeOut, sizeof(uint64_t)),
+                [this](std::error_code ec, std::size_t length)
+                {
+                    if (!ec)
+                    {
+                        // after validation, wait for server
+                        // if server shut down connection, client close connection in next ReadHeader()
+                        if (m_nOwnerType == owner::client) {
+                            ReadHeader();
+                        }
+                    }
+                    else
+                    {
+                        m_socket.close();
+                    }
+                });
+        }
+        void ReadValidation(net::server_interface<T>* server = nullptr)
+        {
+            boost::asio::async_read(m_socket, boost::asio::buffer(&m_nHandshakeIn, sizeof(uint64_t)),
+                [this, server](std::error_code ec, std::size_t length)
+                {
+                    if (!ec)
+                    {
+                        if (m_nOwnerType == owner::client)
+                        {
+                            // use 'scramble' function to make crypto data
+                            m_nHandshakeOut = scramble(m_nHandshakeIn);
+                            // send back to server
+                            WriteValidation();
+                        }
+                        else if (m_nOwnerType == owner::server)
+                        {
+                            if (m_nHandshakeIn == m_nHandshakeCheck)
+                            {
+                                std::cout << "[SERVER] Client Validated\n";
+                                server->OnClientValidated(this->shared_from_this());
+                                // let server read client's header
+                                ReadHeader();
+                            }
+                            else
+                            {
+                                // client failed to respond crypto
+                                std::cout << "Disconnect Suspicious Client\n";
+                                // TODO : list up this client on black-list 
+                                m_socket.close();
+                            }
+                        }
+                        else
+                        {
+                            // wrong case, do nothing
+                        }
+
+                        // after validation, wait for server
+                        // if server shut down connection, we close connection in next ReadHeader()
+                        if (m_nOwnerType == owner::client)
+                            ReadHeader();
+                    }
+                    else
+                    {
+                        std::cout << "[SERVER] Unsolicited Client Disconnected\n"; 
+                        m_socket.close();
+                    }
+                });
+        }
+
     protected:
         // each connection has a unique socket to a remote
         boost::asio::ip::tcp::socket m_socket;
@@ -265,7 +374,12 @@ namespace net
         // type of interface
         owner m_nOwnerType = owner::server; // default server
         uint32_t id = 0;
-    };
+
+        // for Handshake Validation
+        uint64_t m_nHandshakeOut = 0;
+        uint64_t m_nHandshakeIn = 0;
+        uint64_t m_nHandshakeCheck = 0; // for server to compare client's result with answer
+   };
 }
 
 #endif

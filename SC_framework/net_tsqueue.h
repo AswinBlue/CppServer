@@ -28,11 +28,19 @@ namespace net
         {
             std::scoped_lock lock(muxQueue); // mutex lock
             deqQueue.emplace_front(std::move(item));
+
+            // stop waiting for 'cvBlocking' condition variable
+            std::unique_lock<std::mutex> ul(muxBlocking);
+            cvBlocking.notify_one();
         }
         void push_back(const T& item)
         {
             std::scoped_lock lock(muxQueue); // mutex lock
             deqQueue.emplace_back(std::move(item));
+
+            // stop waiting for 'cvBlocking' condition variable
+            std::unique_lock<std::mutex> ul(muxBlocking);
+            cvBlocking.notify_one();
         }
 
         bool empty()
@@ -67,9 +75,34 @@ namespace net
             deqQueue.pop_back(); // remove the item
             return t; // return the item
         }
+        /*
+        * when it's called, it suspends calling object until the new message is written to the queue
+        */
+        void wait()
+        {
+            /*
+            * check whether the queue is empty or not with tight loop
+            * if queue is empty, process that calls this function will be locked in the while loop below
+            * when some other thread wrote a message in queue, the block will be released
+            */
+            while (empty())
+            {
+                std::unique_lock<std::mutex> ul(muxBlocking);
+                cvBlocking.wait(ul); 
+                /* 
+                * thread wait here until something signals condition variable to wake up
+                * 1) our cell can wake up this thread
+                * 2) phenomena called "spurious wakeup" can wake up thread
+                * this will save CPU usage
+                */
+            }
+        }
     protected:
         std::mutex muxQueue;
         std::deque<T> deqQueue;
+
+        std::condition_variable cvBlocking; // to make thread sleep
+        std::mutex muxBlocking; // to make thread-safe 'cvBlocking'
     };
 }
 

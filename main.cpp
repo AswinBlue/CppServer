@@ -8,6 +8,9 @@
 #define PORT 3600
 using namespace std;
 
+// open server with given port
+Server server(PORT);
+
 bool initInfra() {
     // log setting
     Logger *logger = new Logger(LOG_LEVEL_DEBUG);
@@ -16,8 +19,6 @@ bool initInfra() {
 }
 
 void startNetwork() {
-    // open server with given port
-    Server server(3600);
 
     // launch server
     LOG_DEBUG("Set server socket");
@@ -37,6 +38,7 @@ int main(int argc, char* argv[]) {
 
     boost::thread network_thread = boost::thread(boost::bind(&startNetwork));
 
+    server.StartMap();
     while (true) {
         // sleep infinite
         cout << "[SERVER] main sleep count +\n";

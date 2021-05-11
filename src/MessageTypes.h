@@ -8,7 +8,15 @@ enum class MessageTypes : uint32_t
     ServerPing,
     MessageAll,
     ServerMessage,
+    UserPosition
 };
+
+typedef struct __attribute__ ((packed)) position{
+    uint16_t pos_x;
+    uint16_t pos_y;
+    uint8_t dir;
+}Position;
 
 
 #endif
+

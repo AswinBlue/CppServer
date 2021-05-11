@@ -1,4 +1,4 @@
-SET( SRC_FILES Logger.cpp Map.cpp MySQL.cpp)
+SET( SRC_FILES Logger.cpp MySQL.cpp)
 SET ( CMAKE_BUILD_TYPE Debug )
 SET ( CMAKE_VERBOSE_MAKEFILE true )
 add_library(main_source_lib ${SRC_FILES})

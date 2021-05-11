@@ -5,6 +5,7 @@
 #include "net_tsqueue.h"
 #include "net_message.h"
 #include "net_connection.h"
+#include "Define.h"
 
 namespace net
 {
@@ -81,7 +82,8 @@ namespace net
                             // push connection to deque
                             m_deqConnections.push_back(std::move(new_conn));
                             m_deqConnections.back() -> ConnectToClient(this, nIDCounter++); // allocate an id to connection
-                            std::cout << "[" << m_deqConnections.back()->GetID() << "] Aonnection Accomplished\n";
+                            std::cout << "[" << m_deqConnections.back()->GetID() << "] Connection Accomplished\n";
+                            PostClientConnected(m_deqConnections.back());
                         }
                         else
                         {
@@ -185,6 +187,10 @@ namespace net
             // decide whether accept new client or decline request
             return false;
         }
+        virtual void PostClientConnected(std::shared_ptr< connection<T> > client)
+        {
+            // after client connected
+        }
         virtual void OnClientDisconnect(std::shared_ptr< connection<T> > client)
         {
         }
@@ -214,7 +220,7 @@ namespace net
         std::thread m_threadContext;
 
         // clients will get unique id, which server can manage with
-        uint32_t nIDCounter = 10000;
+        uint32_t nIDCounter = UID_START_NUMBER;
     };
 }
 

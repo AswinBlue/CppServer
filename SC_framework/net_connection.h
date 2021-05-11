@@ -66,10 +66,10 @@ namespace net
 
                     // don't read message right after connection
                     // read message after validation
-                    WriteValidation();
-                    ReadValidation(server);
+                    //WriteValidation();
+                    //ReadValidation(server);
 
-                    // ReadHeader(); 
+                     ReadHeader(); 
                     /* ReadHeader function is a asio asynchronous funciton
                     * when server connect to server, we must start reading
                     * running ReadHeader function once, we don't have to care about when to read,
@@ -95,8 +95,8 @@ namespace net
                         if (!ec)
                         {
                             // make asio task to wait and read messages
-                            ReadValidation();
-                            //ReadHeader();
+                            // ReadValidation();
+                            ReadHeader();
                         }
                         else
                         {
@@ -133,7 +133,7 @@ namespace net
             boost::asio::post(m_asioContext,
                 [this, msg]()
                 {
-                    std::cout << "DEBUG: " << msg << "\n";
+                    std::cout << "DEBUG: Send " << msg; 
                     bool bWritingMessage = !m_qMessageOut.empty();
                     // we have to push message in our outgoint message queue first
                     m_qMessageOut.push_back(msg);

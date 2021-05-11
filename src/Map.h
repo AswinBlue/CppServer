@@ -1,16 +1,12 @@
-typedef struct geography{
-    int size_x;
-    int size_y;
-    int* map;
-}Geography;
+#ifndef __MAP_H__
+#define __MAP_H__
 
-class Map {
-private:
-    Geography geography;
-public:
-    Map() {}
-    int loadMapFromFile(char* file);
-    int updateUser(int userId, int newX, int newY);
-    int* getMap();
-};
+#include<iostream>
 
+typedef struct userPosition{
+    uint16_t pos_x;
+    uint16_t pos_y;
+    uint8_t dir;
+}UserPosition;
+
+#endif

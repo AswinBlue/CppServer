@@ -45,6 +45,21 @@ public:
         std::cout << "Send Message " << str << "\n";
     }
 
+    void MovePlayer()
+    {
+        static Position p = {0, 0, 0};
+        p.pos_x += 1;
+        p.pos_y += 1;
+        p.dir += 1;
+
+		net::message<MessageTypes> msg;
+        // msg << (p.pos_x) << (p.pos_y) << (p.dir); 
+        msg << p;
+		msg.header.id = MessageTypes::UserPosition;
+        Send(msg);
+        std::cout << "Send Message " << p.pos_x << " " << p.pos_y << " " << p.dir << "\n";
+    }
+
 };
 
 void keyboardInput(CustomClient* c, bool* bQuit)
@@ -62,6 +77,9 @@ void keyboardInput(CustomClient* c, bool* bQuit)
             c->MessageAll();
         }
         else if (!key.compare("3")) {
+            c->MovePlayer();
+        }
+        else if (!key.compare("q")) {
             *bQuit = true;
             std::cout << "disconnect\n";
         }
@@ -118,6 +136,19 @@ int main()
 					std::cout << "Hello from [" << clientID << "]\n" << std::flush;
 				}
 				break;
+                case MessageTypes::UserPosition:
+                {
+                    std::cout << "position came from server\n";
+                    for (int i = 0; i < msg.header.size; i += sizeof(Position))
+                    {
+                        Position p;
+                        // msg >> p.pos_x >> p.pos_y >> p.dir;
+                        msg >> p;
+                        std::cout << i/sizeof(Position) << ": " << p.pos_x << " " << p.pos_y << " " << p.dir << ";";
+                    }
+                    std::cout << "\n";
+                }
+                break;
                 default:
                 {
                     std::cout << "unknown type message came\n";

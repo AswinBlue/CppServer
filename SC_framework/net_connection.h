@@ -26,7 +26,7 @@ namespace net
         // socket : socket should be unique and wholly owned by connection
         // qIn : incomming queue of client/server interface, connection will send message to it
         connection(owner parent, boost::asio::io_context& asioContext, boost::asio::ip::tcp::socket socket, tsqueue< traced_message<T> >& qIn)
-            : m_asioContext(asioContext), m_socket(std::move(socket)), m_qMessageIn(qIn)
+            : m_asioContext(asioContext), m_socket(std::move(socket)), m_qMessageIn(qIn), m_DeadlineTimer(asioContext)
         {
             // to make differences with critical fields and less-critical fields,
             // we made disparity
@@ -38,6 +38,9 @@ namespace net
                 // if create random data. send it to server when 'WriteValidation()' called
                 m_nHandshakeOut = uint64_t(std::chrono::system_clock::now().time_since_epoch().count());
                 m_nHandshakeCheck = scramble(m_nHandshakeOut);
+                m_nReadTimer = -1;
+
+                // set read timeout
             }
             else
             {
@@ -133,7 +136,7 @@ namespace net
             boost::asio::post(m_asioContext,
                 [this, msg]()
                 {
-                    std::cout << "DEBUG: Send " << msg; 
+                    std::cout << "DEBUG: Send " << msg << "\n"; 
                     bool bWritingMessage = !m_qMessageOut.empty();
                     // we have to push message in our outgoint message queue first
                     m_qMessageOut.push_back(msg);
@@ -379,7 +382,15 @@ namespace net
         uint64_t m_nHandshakeOut = 0;
         uint64_t m_nHandshakeIn = 0;
         uint64_t m_nHandshakeCheck = 0; // for server to compare client's result with answer
+
+        // check read timer
+        // to cut out non-working client in server side
+        // client should ping periodically
+        boost::asio::deadline_timer m_DeadlineTimer;
+        uint32_t m_nReadTimer;
+
    };
 }
 
 #endif
+

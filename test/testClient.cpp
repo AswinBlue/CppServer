@@ -12,6 +12,7 @@
 #include <string>
 #include <boost/thread.hpp>
 
+
 class CustomClient : public net::client_interface<MessageTypes>
 {
 public:
@@ -45,24 +46,28 @@ public:
         std::cout << "Send Message " << str << "\n";
     }
 
-    void MovePlayer()
+    void MovePlayer(uint8_t* ID)
     {
-        static Position p = {0, 0, 0};
-        p.pos_x += 1;
-        p.pos_y += 1;
-        p.dir += 1;
+        static UserData user;
+//        std::cout << "ID from : " << ID;
+        memcpy(user.ID, ID, USER_ID_LEN);
+        std:: cout << " to " << user.ID;
+        user.pos.pos_x += 1;
+        user.pos.pos_y += 1;
+        user.pos.dir += 1;
 
 		net::message<MessageTypes> msg;
         // msg << (p.pos_x) << (p.pos_y) << (p.dir); 
-        msg << p;
-		msg.header.id = MessageTypes::UserPosition;
+        msg << user;
+		msg.header.id = MessageTypes::UserPositionUpdate;
         Send(msg);
-        std::cout << "Send Message " << p.pos_x << " " << p.pos_y << " " << p.dir << "\n";
+        std::cout << user << "\n";
+        // std::cout << " Send Message " << user.pos.pos_x << " " << user.pos.pos_y << " " << user.pos.dir << "\n";
     }
 
 };
 
-void keyboardInput(CustomClient* c, bool* bQuit)
+void keyboardInput(CustomClient* c, bool* bQuit, uint8_t* ID)
 {
     std::string key;
     do {
@@ -77,7 +82,7 @@ void keyboardInput(CustomClient* c, bool* bQuit)
             c->MessageAll();
         }
         else if (!key.compare("3")) {
-            c->MovePlayer();
+            c->MovePlayer(ID);
         }
         else if (!key.compare("q")) {
             *bQuit = true;
@@ -95,8 +100,9 @@ int main()
     CustomClient c;
     c.Connect("127.0.0.1", 3600);
     bool bQuit = false;
+    uint8_t ID[USER_ID_LEN];
 
-    boost::thread th1 = boost::thread(boost::bind(&keyboardInput, &c, &bQuit));
+    boost::thread th1 = boost::thread(boost::bind(&keyboardInput, &c, &bQuit, ID));
 
     while (!bQuit)
     {
@@ -136,19 +142,37 @@ int main()
 					std::cout << "Hello from [" << clientID << "]\n" << std::flush;
 				}
 				break;
-                case MessageTypes::UserPosition:
+                case MessageTypes::UserPositionUpdate:
                 {
                     std::cout << "position came from server\n";
-                    for (int i = 0; i < msg.header.size; i += sizeof(Position))
+                    for (int i = 0; i < msg.header.size; i += sizeof(UserData))
                     {
-                        Position p;
+                        UserData user;
                         // msg >> p.pos_x >> p.pos_y >> p.dir;
-                        msg >> p;
-                        std::cout << i/sizeof(Position) << ": " << p.pos_x << " " << p.pos_y << " " << p.dir << ";";
+                        msg >> user;
+                        std::cout << user << "\n";
+                        //std::cout << user.ID[8] << user.ID[9] << user.ID[10] << user.ID[11] << ": " << user.pos.pos_x << " " << user.pos.pos_y << " " << user.pos.dir << ";";
                     }
                     std::cout << "\n";
+                    break;
                 }
-                break;
+                case MessageTypes::ClientSendUserID:
+                {
+                    std::cout << "ID came from server, currentID : ";
+
+                    for (int i = 0; i < USER_ID_LEN; ++i) {
+                        std::cout << (unsigned)(*(msg.body.data() + i)) << " ";
+                    }
+                    std::cout << "\n";
+                    msg >> ID[0];
+
+                    std::cout << "ID came from server, afterID : ";
+                    for (int i = 0; i < USER_ID_LEN; ++i) {
+                        std::cout << (unsigned)(ID[i]) << " ";
+                    }
+                    std::cout << "\n";
+                    break;
+                }
                 default:
                 {
                     std::cout << "unknown type message came\n";

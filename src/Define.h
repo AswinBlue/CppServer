@@ -1,2 +1,3 @@
 #define MAX_USER_ON_MAP 1000
 #define UID_START_NUMBER 1000
+#define USER_ID_LEN 12

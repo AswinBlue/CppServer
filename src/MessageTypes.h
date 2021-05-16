@@ -4,6 +4,8 @@
 #include "Define.h"
 #include <iostream>
 #include <string>
+#include <vector>
+
 enum class MessageTypes : uint32_t
 {
     ServerAccept,
@@ -31,9 +33,19 @@ typedef struct __attribute__ ((packed)) Position {
 typedef struct __attribute__ ((packed)) UserData {
     uint8_t ID[USER_ID_LEN];
     Position pos;
+
+    // case vector<uint8_t> :
+    // UserData() : ID(USER_ID_LEN) {} // initialize ID with fixed length
     friend std::ostream& operator << (std::ostream& os, const UserData& user) {
-        os << "ID: " << (char*)user.ID << " " << user.pos;
+        // case uint8_t[]. 
+        // TODO : user.ID don't have '\0', need to make it safe when print
+        std::string str( (char*) user.ID);
+        os << "ID: " << str << " " << user.pos;
+        // case vector<uint8_t> :
+        // std::string str(user.ID.begin(), user.ID.end());
+        // os << "ID: " << str << " " << user.pos;
         return os;
+
     }
 }UserData;
 

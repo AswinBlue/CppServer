@@ -10,6 +10,7 @@
 #include "MessageTypes.h"
 #include "Define.h"
 #include "Utils.h"
+#include "Logger.h"
 
 #include <string>
 #include <sstream>
@@ -18,8 +19,11 @@
 class Server : public net::server_interface <MessageTypes>
 {
 private:
-    boost::thread thread_map_broadcasting;
-    bool flag_thread_map_broadcasting = false;
+// thread list
+    bool m_isUserDataBroadcasting = false;
+    bool m_isSocketListening = false;
+    std::vector<std::thread> m_threadList;
+// UserData list
     std::vector<UserData> m_totalUser;
     std::vector<bool> m_totalUserUsage;
 
@@ -28,8 +32,13 @@ public:
 	{} 
     ~Server()
     {
-        if (flag_thread_map_broadcasting)
-            thread_map_broadcasting.join();
+        m_isUserDataBroadcasting = false;
+        m_isSocketListening = false;
+        for (std::vector<std::thread> ::iterator t = m_threadList.begin(); t != m_threadList.end(); t++)
+        {
+            t->join();
+        }
+        Stop();
     }
 
 protected:
@@ -43,8 +52,26 @@ protected:
 	}
     virtual void PostClientConnected(std::shared_ptr< net::connection<MessageTypes> > client)
     {
+        // assign client's own ID and send it to client
+        net::message<MessageTypes> msg;
+        msg.header.id = MessageTypes::ClientSendUserID;
+        // int to string
+        std::stringstream ss;
+        ss << std::setw(USER_ID_LEN) << std::setfill('0') << client->GetID();
+        std::string s = ss.str();
+        /* 
+        * copy char* data into uint8_t*
+        * WARN : if you don't use '<<' operator, you have to resize msg.body first
+        */
+        // case 1. use memcpy
+        // msg.body.resize(msg.body.size() + s.size());
+        // std::memcpy(msg.body.data(), reinterpret_cast<const uint8_t*>(s.c_str()), USER_ID_LEN);
+        // std::copy(s.begin(), s.end(), msg.body.begin());
+        msg << s;
 
-        if (flag_thread_map_broadcasting)
+        MessageClient(client, msg);
+
+        if (m_isUserDataBroadcasting)
         {
             SpawnPlayer(client);
             int idx = client->GetID() - UID_START_NUMBER;
@@ -54,25 +81,21 @@ protected:
             }
             else
             {
-                std::cout << "[SERVER] spawn index : " << idx << "\n";
+                LOG_DEBUG("[SERVER] spawn index : {}", idx);
             }
         }
 
-        net::message<MessageTypes> msg;
-        msg.header.id = MessageTypes::ClientSendUserID;
-        msg << client->GetID();
-        MessageClient(client, msg);
     }
 
 	// Called when a client appears to have disconnected
 	virtual void OnClientDisconnect(std::shared_ptr< net::connection<MessageTypes> > client)
 	{
         // if using Map
-        if (flag_thread_map_broadcasting)
+        if (m_isUserDataBroadcasting)
         {
-            m_totalUserUsage[client->GetID()] = false;
+            m_totalUserUsage[client->GetID() - UID_START_NUMBER] = false;
         }
-		std::cout << "Removing client [" << client->GetID() << "]\n";
+		LOG_DEBUG("[{}] Removing client", client->GetID());
 	}
 
 	// Called when a message arrives
@@ -81,7 +104,7 @@ protected:
 		switch (msg.header.id)
 		{
 		case MessageTypes::ServerPing:
-			std::cout << "[" << client->GetID() << "]: Server Ping\n";
+			LOG_TRACE("[{}] Server Ping", client->GetID());
 
 			// Simply bounce message back to client
             MessageClient(client, msg);
@@ -89,19 +112,18 @@ protected:
 
 		case MessageTypes::MessageAll:
         {
-			std::cout << "[" << client->GetID() << "]: Message All\n";
 
 			// Construct a new message and send it to all clients
 			net::message<MessageTypes> msg_all;
 			msg_all.header.id = MessageTypes::ServerMessage;
 			msg_all << client->GetID();
-            std::cout << msg_all;
+			LOG_TRACE("[{}] Message All : {}", client->GetID(), msg_all);
 			MessageAllClients(msg_all, client);
             break;
         }
         case MessageTypes::UserPositionUpdate:
         {
-            if (flag_thread_map_broadcasting)
+            if (m_isUserDataBroadcasting)
             {
                 if ((client->GetID() - UID_START_NUMBER) < m_totalUser.size())
                 {
@@ -113,17 +135,17 @@ protected:
                     // msg >> p.pos_x >> p.pos_y >> p.dir;
                     msg >> user;
 
-                    std:: cout << "[SERVER] Position Message came : " << user << "\n";
-                    m_totalUser[client->GetID() - UID_START_NUMBER] = user;
+                    LOG_TRACE("[SERVER] Position Message came : {}", user);
+                    m_totalUser[client->GetID() - UID_START_NUMBER].pos = user.pos;
                 }
                 else
                 {
-                    std::cout << "[SERVER] out of range client id :" << client->GetID() << ", limit :" << m_totalUser.size() << "\n";
+                    LOG_WARN("[SERVER] out of range client id : {}, limit : {}", client->GetID(), m_totalUser.size());
                 }
             }
             else
             {
-                std::cout << "[SERVER] Map is not running now\n";
+                LOG_WARN("[SERVER] Map is not running now");
             }
            break;
         }
@@ -133,19 +155,38 @@ protected:
             break;
         }
         default:
-			std::cout << "[" << client->GetID() << "]: Echo Client\n";
-            // echo
-            MessageClient(client, msg);
-            // do nothing
+			LOG_WARN("[{}] Wrong Message Type", client->GetID());
+            // TODO : client sent wrong message type, consider the client as suspicious attacker
             break;
 		}
         fflush(stdout);
 	}
 
-    // thread function : manage user position and broadcasting in 
-    void ThreadBroadcastMap ()
+    void SpawnPlayer(std::shared_ptr< net::connection<MessageTypes> > client)
     {
-        while (true) {
+        net::message<MessageTypes> msg;
+        msg.header.id = MessageTypes::UserPositionUpdate;
+        UserData user;
+        // int to string
+        std::stringstream ss;
+        ss << std::setw(USER_ID_LEN) << std::setfill('0') << client->GetID();
+        std::string s = ss.str();
+        // case 1. copy string to uint8_t[]
+        // std::memcpy(user.ID, reinterpret_cast<const uint8_t*>(s.c_str()), USER_ID_LEN);
+        // case 2. copy string to vector<uint8_t>
+        std::memcpy(user.ID, s.c_str(), USER_ID_LEN);
+        user.pos = {0, 0, 0};
+        LOG_DEBUG("[SERVER] User Spawned :: {}", user);
+        m_totalUser[client->GetID() - UID_START_NUMBER] = user;
+
+        msg << user;
+        MessageClient(client, msg);
+    }
+
+    // thread function : manage user position and broadcasting in 
+    void ThreadBroadcastUserData()
+    {
+        while (m_isUserDataBroadcasting) {
             boost::this_thread::sleep(boost::posix_time::millisec(5000));
             net::message<MessageTypes> msg;
             msg.header.id = MessageTypes::UserPositionUpdate;
@@ -154,46 +195,43 @@ protected:
                 // Client 'i' exist in map
                 if (m_totalUserUsage[i])
                 {
-                    std::cout << i << ": " << m_totalUser[i] << "\n";
-                    // msg << m_totalUser[i].pos_x << m_totalUser[i].pos_y << m_totalUser[i].dir;
+                    LOG_TRACE("{}: {} ", i, m_totalUser[i]);
                     msg << m_totalUser[i];
                 }
             }
             MessageAllClients(msg);
-            std::cout << "[SERVER] broadcast map\n";
+            LOG_TRACE("[SERVER] broadcast userdata map\n");
         }
     }
 
-    void SpawnPlayer(std::shared_ptr< net::connection<MessageTypes> > client)
-    {
-        net::message<MessageTypes> msg;
-        msg.header.id = MessageTypes::UserPositionUpdate;
-        UserData user;
-        // int to string
-        // IntToArray(client->GetID(), (user.ID), USER_ID_LEN);
-        std::stringstream ss;
-        //std::to_string(client->GetID());
-        ss << std::setw(USER_ID_LEN) << std::setfill('0') << client->GetID();
-        std::string s = ss.str();
-        std::memcpy(user.ID, reinterpret_cast<const uint8_t*>(s.c_str()), USER_ID_LEN);
-        user.pos = {0, 0, 0};
-        std::cout << "[SERVER] User spaned : " << user << "\n";
-
-        m_totalUser[client->GetID() - UID_START_NUMBER] = user;
-
-        msg << user;
-        MessageClient(client, msg);
-    }
     public:
     // start thread
-    void StartMap()
+    bool StartUserDataBroadcasting()
     {
         m_totalUser.resize(MAX_USER_ON_MAP);
         m_totalUserUsage.resize(MAX_USER_ON_MAP, false);
-        //thread_map_broadcasting = boost::thread(boost::bind(&Server::ThreadBroadcastMap));
-        flag_thread_map_broadcasting = true;
-        std::cout << "[SERVER] Start World, size : " << MAX_USER_ON_MAP << "\n";
-        ThreadBroadcastMap();
+        m_threadList.push_back(std::thread(&Server::ThreadBroadcastUserData, this));
+        m_isUserDataBroadcasting = true;
+        LOG_INFO("[SERVER] ---Start World, size : {}", MAX_USER_ON_MAP);
+        return true;
+    }
+    
+    // start server-client socket communication thread
+    bool StartServerSocket(size_t maxMessage, bool wait)
+    {
+        if (!Start()) {
+            return false;
+        } 
+        m_isSocketListening = true;
+
+        m_threadList.push_back(std::thread(
+            [this](size_t maxMessage, bool wait){
+                while (m_isSocketListening) {
+                    Update(maxMessage, wait);
+                }
+            }, maxMessage, wait));
+        LOG_INFO("[SERVER] --- Start Server Socket");
+        return true;
     }
 
 };

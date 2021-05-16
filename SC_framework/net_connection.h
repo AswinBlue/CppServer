@@ -4,6 +4,7 @@
 #include "net_common.h"
 #include "net_tsqueue.h"
 #include "net_message.h"
+#include "Logger.h"
 
 namespace net
 {
@@ -82,7 +83,7 @@ namespace net
             }
             else
             {
-                std::cout << "[" << id << "] Server side function called by Client\n";
+                LOG_CRITICAL("[{}] Server side function called by Client", id);
             }
         }
 
@@ -103,13 +104,13 @@ namespace net
                         }
                         else
                         {
-                            std::cout << "[Client] Connect to Server Failed : " << ec.message() << "\n";
+                            LOG_WARN("[Client] Connect to Server Failed : {}", ec.message());
                         }
                     });
             }
             else
             {
-                std::cout << "[" << id << "] Client side function called by Server\n";
+                LOG_CRITICAL("[{}] Client side function called by Server", id);
             }
         }
 
@@ -136,7 +137,7 @@ namespace net
             boost::asio::post(m_asioContext,
                 [this, msg]()
                 {
-                    std::cout << "DEBUG: Send " << msg << "\n"; 
+                    LOG_TRACE("Send {}", msg); 
                     bool bWritingMessage = !m_qMessageOut.empty();
                     // we have to push message in our outgoint message queue first
                     m_qMessageOut.push_back(msg);
@@ -158,7 +159,7 @@ namespace net
                 {
                     if (!ec)
                     {
-                        std::cout << "DEBUG: ReadHeader " << m_msgTemporaryIn << " " << "\n";
+                        LOG_TRACE("ReadHeader {}", m_msgTemporaryIn);
                         // check it has appropriate length
                         if (m_msgTemporaryIn.header.size > 0)
                         {
@@ -171,12 +172,11 @@ namespace net
                             // no body to handle. just add it to queue
                             AddToIncomingMessageQueue();
                         }
-                        // std::cout << "ReadHeader Finished\n";
                     }
                     else
                     {
                         // dump error and manually force close socket
-                        std::cout << "[" << id << "] Read Header Failed\n";
+                        LOG_WARN("[{}] Read Header Failed", id);
                         m_socket.close();
                         // if we close socket, interface which try to communicate with this socket in the future will recognize it and tidy up its deque
                     }
@@ -191,14 +191,13 @@ namespace net
                 {
                     if (!ec)
                     {
-                        std::cout << "DEBUG: ReadBody " << m_msgTemporaryIn << " " << "\n";
+                        LOG_TRACE("ReadBody {}", m_msgTemporaryIn);
                         AddToIncomingMessageQueue();
-                        // std::cout << "ReadBody Finished\n";
                     }
                     else
                     {
                         // dump error and manually force close socket
-                        std::cout << "[" << id << "] Read Body Failed\n";
+                        LOG_WARN("[{}] Read Body Failed", id);
                         m_socket.close();
                     }
                 });
@@ -228,11 +227,10 @@ namespace net
                                 WriteHeader();
                             }
                         }
-                        // std::cout << "WriteHeader Finished\n";
                     }
                     else
                     {
-                        std::cout << "[" << id << "] Write Header Failed\n";
+                        LOG_WARN("[{}] Write Header Failed", id);
                         m_socket.close();
                     }
                 });
@@ -253,11 +251,10 @@ namespace net
                         {
                             WriteHeader();
                         }
-                        // std::cout << "WriteBody Finished\n";
                     }
                     else
                     {
-                        std::cout << "[" << id << "] Write Body Failed\n";
+                        LOG_WARN("[{}] Write Body Failed", id);
                         m_socket.close();
                     }
                 });
@@ -329,7 +326,7 @@ namespace net
                         {
                             if (m_nHandshakeIn == m_nHandshakeCheck)
                             {
-                                std::cout << "[SERVER] Client Validated\n";
+                                LOG_DEBUG("[SERVER] Client Validated");
                                 server->OnClientValidated(this->shared_from_this());
                                 // let server read client's header
                                 ReadHeader();
@@ -337,7 +334,7 @@ namespace net
                             else
                             {
                                 // client failed to respond crypto
-                                std::cout << "Disconnect Suspicious Client\n";
+                                LOG_DEBUG("Disconnect Suspicious Client");
                                 // TODO : list up this client on black-list 
                                 m_socket.close();
                             }
@@ -354,7 +351,7 @@ namespace net
                     }
                     else
                     {
-                        std::cout << "[SERVER] Unsolicited Client Disconnected\n"; 
+                        LOG_WARN("[SERVER] Unsolicited Client Disconnected"); 
                         m_socket.close();
                     }
                 });

@@ -1,12 +1,22 @@
 #ifndef __MAP_H__
 #define __MAP_H__
 
-#include<iostream>
+using namespace std;
 
-typedef struct userPosition{
-    uint16_t pos_x;
-    uint16_t pos_y;
-    uint8_t dir;
-}UserPosition;
+int Map::loadMapFromFile(char* file) {
+    //TODO load from file
+
+    // testCode
+    this->geography.map = new int[1024 * 1024];
+}
+
+int Map::updateUser(int userId, int newX, int newY) {
+    //TODO : find user, change user
+
+}
+
+int* Map::getMap() {
+    return this->geography.map;
+}
 
 #endif

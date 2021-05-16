@@ -11,7 +11,7 @@
 #include <sys/ioctl.h>
 #include <string>
 #include <boost/thread.hpp>
-
+#include <vector>
 
 class CustomClient : public net::client_interface<MessageTypes>
 {
@@ -46,15 +46,14 @@ public:
         std::cout << "Send Message " << str << "\n";
     }
 
-    void MovePlayer(uint8_t* ID)
+    void MovePlayer(std::vector<uint8_t>& ID)
     {
         static UserData user;
-//        std::cout << "ID from : " << ID;
-        memcpy(user.ID, ID, USER_ID_LEN);
-        std:: cout << " to " << user.ID;
+        memcpy(user.ID, ID.data(), USER_ID_LEN);
         user.pos.pos_x += 1;
         user.pos.pos_y += 1;
         user.pos.dir += 1;
+        std:: cout << "send UserData to Server :: " << user;
 
 		net::message<MessageTypes> msg;
         // msg << (p.pos_x) << (p.pos_y) << (p.dir); 
@@ -67,7 +66,7 @@ public:
 
 };
 
-void keyboardInput(CustomClient* c, bool* bQuit, uint8_t* ID)
+void keyboardInput(CustomClient* c, bool* bQuit, std::vector<uint8_t>& ID)
 {
     std::string key;
     do {
@@ -100,7 +99,7 @@ int main()
     CustomClient c;
     c.Connect("127.0.0.1", 3600);
     bool bQuit = false;
-    uint8_t ID[USER_ID_LEN];
+    std::vector<uint8_t> ID(USER_ID_LEN);
 
     boost::thread th1 = boost::thread(boost::bind(&keyboardInput, &c, &bQuit, ID));
 
@@ -151,26 +150,25 @@ int main()
                         // msg >> p.pos_x >> p.pos_y >> p.dir;
                         msg >> user;
                         std::cout << user << "\n";
-                        //std::cout << user.ID[8] << user.ID[9] << user.ID[10] << user.ID[11] << ": " << user.pos.pos_x << " " << user.pos.pos_y << " " << user.pos.dir << ";";
                     }
                     std::cout << "\n";
                     break;
                 }
                 case MessageTypes::ClientSendUserID:
                 {
-                    std::cout << "ID came from server, currentID : ";
+                    std::cout << "ID came from server: ";
 
                     for (int i = 0; i < USER_ID_LEN; ++i) {
                         std::cout << (unsigned)(*(msg.body.data() + i)) << " ";
                     }
                     std::cout << "\n";
-                    msg >> ID[0];
+                    msg >> ID;
 
                     std::cout << "ID came from server, afterID : ";
-                    for (int i = 0; i < USER_ID_LEN; ++i) {
-                        std::cout << (unsigned)(ID[i]) << " ";
+                    for (auto i = ID.begin(); i != ID.end(); i++) {
+                        std::cout << (*i) << " ";
                     }
-                    std::cout << "\n";
+                    std::cout << msg <<  "\n";
                     break;
                 }
                 default:

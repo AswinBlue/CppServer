@@ -2,6 +2,8 @@
 #define __MESSAGE_H__
 
 #include "net_common.h"
+#include <type_traits>
+
 namespace net
 {
     // type 'T' could be enum class 
@@ -56,6 +58,49 @@ namespace net
             static_assert(std::is_standard_layout<DataType>::value, "Data is too complex to serialize");
             size_t i = msg.body.size() - sizeof(DataType); // get size of body after pop
             std::memcpy(&data, msg.body.data() + i, sizeof(DataType)); // physically write data
+            msg.body.resize(i); // shrink the vector, but 
+            msg.header.size = msg.size(); // update size of message
+            return msg; // return itself
+        }
+
+        /*
+        * ========== For 'vector', 'string', make template specification ==========
+        */
+        friend message<T>& operator << (message<T>& msg, const std::string& data)
+        {
+            size_t i = msg.body.size(); // get current body size
+            msg.body.resize(i + data.size()); // resize vector
+            //std::memcpy(msg.body.data(), reinterpret_cast<const uint8_t*>(data.c_str()), data.size());
+            std::copy(data.begin(), data.end(), msg.body.begin());
+            msg.header.size = msg.size(); // update size of message
+            return msg; // return itself
+        }
+        friend message<T>& operator >> (message<T>& msg, std::vector<T>& data)
+        {
+            size_t i = msg.body.size() - data.size(); // get size of body after pop
+            // std::memcpy(data.data(), msg.body.data() + i, data.size()); // physically write data
+            std::copy(msg.body.begin(), msg.body.end(), data.begin());
+            msg.body.resize(i); // shrink the vector, but 
+            msg.header.size = msg.size(); // update size of message
+            return msg; // return itself
+        }
+
+        template <typename U>
+        friend message<T>& operator << (message<T>& msg, const std::vector<U>& data)
+        {
+            size_t i = msg.body.size(); // get current body size
+            msg.body.resize(i + data.size()); // resize vector
+            std::memcpy(msg.body.data() + i, data.data(), data.size()); // physically write data
+            // std::copy(data.begin(), data.end(), msg.body.begin());
+            msg.header.size = msg.size(); // update size of message
+            return msg; // return itself
+        }
+        template <typename U>
+        friend message<T>& operator >> (message<T>& msg, std::vector<U>& data)
+        {
+            size_t i = msg.body.size() - data.size(); // get size of body after pop
+            std::memcpy(data.data(), msg.body.data() + i, data.size()); // physically write data
+            // std::copy(msg.body.begin(), msg.body.end(), data.begin());
             msg.body.resize(i); // shrink the vector, but 
             msg.header.size = msg.size(); // update size of message
             return msg; // return itself

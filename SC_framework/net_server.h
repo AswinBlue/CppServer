@@ -6,6 +6,7 @@
 #include "net_message.h"
 #include "net_connection.h"
 #include "Define.h"
+#include "Logger.h"
 
 namespace net
 {
@@ -27,7 +28,7 @@ namespace net
 
         bool Start()
         {
-            std::cout << "[SERVER] Start server\n";
+            LOG_INFO("[SERVER] --- Initialize socket");
             try
             {
                 // work with asio context
@@ -37,11 +38,11 @@ namespace net
             catch (std::exception& e) 
             {
                 // when something prohibited the server from listening
-                std::cerr << "[SERVER] Exception: " << e.what() << "\n";
+                LOG_ERROR("[SERVER] Exception on Start: {}", e.what());
                 return false;
             }
 
-            std::cout << "[SERVER] Started\n";
+            LOG_INFO("[SERVER] --- Server Socket Ready");
             return true;
         }
         
@@ -52,7 +53,7 @@ namespace net
 
             // wait for thread
             if (m_threadContext.joinable()) m_threadContext.join();
-            std::cout << "[SERVER] Stopped\n";
+            LOG_INFO("[SERVER] --- Stop Server");
         }
 
         // ASIO:: task for asio context
@@ -66,7 +67,7 @@ namespace net
                     {
                         // client connected successfully
                         // remote_endpoint return ip address
-                        std::cout << "[SERVER] New Connection: " << socket.remote_endpoint() << "\n";
+                        LOG_DEBUG("[SERVER] New Connection: {}", socket.remote_endpoint());
                         // temporarily make connection
                         std::shared_ptr< connection<T> > new_conn = 
                             // allocate object
@@ -82,19 +83,19 @@ namespace net
                             // push connection to deque
                             m_deqConnections.push_back(std::move(new_conn));
                             m_deqConnections.back() -> ConnectToClient(this, nIDCounter++); // allocate an id to connection
-                            std::cout << "[" << m_deqConnections.back()->GetID() << "] Connection Accomplished\n";
+                            LOG_DEBUG("[{}] Connection Accomplished", m_deqConnections.back()->GetID());
                             PostClientConnected(m_deqConnections.back());
                         }
                         else
                         {
                             // new_conn is smart pointer, there's no reference to it. so it will automatically deleted
-                            std::cout << "[-----] Connection Denied\n";
+                            LOG_DEBUG("[-----] Connection Denied");
                         }
                     }
                     else
                     {
                         // display error
-                        std::cout << "[SERVER] New Connection Error: " << ec.message() << "\n";
+                        LOG_DEBUG("[SERVER] New Connection Error: {}", ec.message());
                     }
                     // wait for another client connection. just re-register another asynchronous task
                     WaitForClientConnection();
@@ -106,7 +107,7 @@ namespace net
             // check 'client' is not null and isConnected
             if (client && client->IsConnected())
             {
-                std::cout <<"DEBUG: MessageClient send message\n";
+                LOG_TRACE("[{}]: MessageClient send message", client->GetID());
                 client->Send(msg);
             }
             else
@@ -132,7 +133,7 @@ namespace net
                 {
                     // ignore specific  client
                     if (client != pIgnoreClient) {
-                        std::cout << "DEBUG: MessageAllClients send message\n";
+                        LOG_TRACE("[{}] MessageAllClients send message", client->GetID());
                         client->Send(msg);
                     }
                 }

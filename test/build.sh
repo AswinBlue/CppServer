@@ -1,3 +1,3 @@
 cd ~/server/test/build
 cmake ..
-make -j16
+make -j64

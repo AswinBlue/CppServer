@@ -1,4 +1,4 @@
 #!/bin/bash
 cd /home/munjunwoo/server/build
 cmake ..
-make -j16
+make -j64
